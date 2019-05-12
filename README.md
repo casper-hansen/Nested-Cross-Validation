@@ -4,11 +4,14 @@ This repository implements a general nested cross-validation function. Ready to 
 # Usage: Single algorithm
 Here is a single example using Random Forest
 ```python
+# Define a parameters grid
 param_grid = {
      'max_depth': [3, None],
      'n_estimators': np.random.randint(10,20,20)
 }
 
+# Define parameters for function
+# If sqrt_of_score = True, the default scoring will be RMSE
 outer_score, best_inner_score, best_params = nested_cv(X, y, RandomForestRegressor(), param_grid, 5, 5, sqrt_of_score = True)
 ```
 
@@ -16,8 +19,8 @@ outer_score, best_inner_score, best_params = nested_cv(X, y, RandomForestRegress
 Here is an example using Random Forest, XGBoost and LightGBM.
 ```python
 models_to_run = [RandomForestRegressor(), xgb.XGBRegressor(), lgb.LGBMRegressor()]
-models_param_grid = [ # 1st param grid, corresponding to RandomForestRegressor
-                    {
+models_param_grid = [ 
+                    { # 1st param grid, corresponding to RandomForestRegressor
                             'max_depth': [3, None],
                             'n_estimators': np.random.randint(100,1000,20)
                     }, 
@@ -25,7 +28,7 @@ models_param_grid = [ # 1st param grid, corresponding to RandomForestRegressor
                             'colsample_bytree': np.linspace(0.3, 0.5),
                             'n_estimators': np.random.randint(100,1000,20)
                     },
-                    {
+                    { # 3rd param grid, corresponding to LGBMRegressor
                             'learning_rate': [0.05],
                             'n_estimators': np.random.randint(100,1000,20),
                             'num_leaves': np.random.randint(10,30,10),
@@ -34,13 +37,17 @@ models_param_grid = [ # 1st param grid, corresponding to RandomForestRegressor
                     }
                     ]
 
+# Allocate inner arrays for each algorithm being run
 outer_score = [ [] for i in range(len(models_to_run)) ]
 best_inner_score = [ [] for i in range(len(models_to_run)) ]
 best_params = [ [] for i in range(len(models_to_run)) ]
 
+# Define parameters for function and run different algorithms in a loop
+# If sqrt_of_score = True, the default scoring will be RMSE
 for i,model in enumerate(models_to_run):
     outer_score[i], best_inner_score[i], best_params[i] = nested_cv(X, y, model, models_param_grid[i], 
                                                                     5, 5, sqrt_of_score = True)
+# Print the output of nested_cv function
 for i,results in enumerate(zip(outer_score, best_inner_score, best_params)):
     print('Outer scores, inner score and best params for model {0}: \n{1}\n{2}\n{3}\n'
     .format(type(models_to_run[i]).__name__,results[0],results[1],results[2]))
