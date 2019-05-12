@@ -42,8 +42,7 @@ for i,model in enumerate(models_to_run):
     outer_score[i], best_inner_score[i], best_params[i] = nested_cv(X, y, model, models_param_grid[i], 
                                                                     5, 5, sqrt_of_score = True)
 for i,results in enumerate(zip(outer_score, best_inner_score, best_params)):
-    print('Outer scores, inner score and best params for model {0}:
-    \n{1}\n{2}\n{3}\n'.format(type(models_to_run[i]).__name__,results[0],results[1],results[2]))
+    print('Outer scores, inner score and best params for model {0}: \n{1}\n{2}\n{3}\n'.format(type(models_to_run[i]).__name__,results[0],results[1],results[2]))
 ```
 
 # How to use the output?
