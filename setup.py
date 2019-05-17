@@ -8,7 +8,7 @@ with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
 setup(
   name = 'nested_cv',       
   packages = ['nested_cv'], 
-  version = '0.911',     
+  version = '0.915',     
   license='MIT',       
   description = 'A general package to handle nested cross-validation for any estimator that implements the scikit-learn estimator interface.',   
   author_email = 'ahmedmagdi@outlook.com',
