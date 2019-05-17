@@ -25,16 +25,17 @@ class NestedCV():
         Number of inner K-partitions in KFold
 
     cv_options: dict, default = {}
-        Nested CV Options, check docs for details.
+        Nested Cross-Validation Options, check docs for details.
 
         metric : callable from sklearn.metrics, default = mean_squared_error
             A scoring metric used to score each model
 
         metric_score_indicator_lower : boolean, default = True
-            Choose whether lowe score is better for the metric calculation or hight score is better, `True` means lower score is better.
+            Choose whether lower score is better for the metric calculation or higher score is better,
+            `True` means lower score is better.
 
         sqrt_of_score : boolean, default = False
-            Whether or not if the square root should be taken of score
+            Whether or not the square root should be taken of score
 
         randomized_search : boolean, default = True
             Whether to use gridsearch or randomizedsearch from sklearn
