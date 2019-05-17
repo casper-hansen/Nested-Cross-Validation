@@ -1,12 +1,19 @@
 # Nested-Cross-Validation
 This repository implements a general nested cross-validation function. Ready to use with ANY estimator that implements the Scikit-Learn estimator interface.
-
+## Installing the pacakge:
+You can find the package on [pypi](https://pypi.org/project/nested-cv/) and install it via pip by using the following command:
+```bash
+pip install nested-cv
+```
+You can also install it from the wheel file on the [Releases](https://github.com/casperbh96/Nested-Cross-Validation/releases) page.
 ## Usage
 Be mindful of the options that are available for NestedCV. Some cross-validation options are defined in a dictionary `cv_options`:
 
 ### Single algorithm
 Here is a single example using Random Forest
 ```python
+#import the package 
+from nested_cv import NestedCV
 # Define a parameters grid
 param_grid = {
      'max_depth': [3, None],
@@ -55,8 +62,16 @@ for i,model in enumerate(models_to_run):
 
     print('\nCumulated best parameter grid was:\n{0}'.format(model_param_grid))
 ```
+### NestedCV Parameters 
+| Name        | type           | description  |
+| :------------- |:-------------| :-----|
+| model      | estimator | The estimator implements scikit-learn estimator interface. |
+| params_grid      | dictionary "dict"      |   The dict contains hyperparameters for model. |
+| outer_kfolds | int      |    Number of outer K-partitions in KFold |
+| inner_kfolds | int      | Number of inner K-partitions in KFold    | 
+| cv_options | dictionary "dict"      |    [Next section](#cv_options-value-options) |
 
-### `cv_options` documentation
+### `cv_options` value options
 **`metric` :** Callable from sklearn.metrics, default = mean_squared_error
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A scoring metric used to score each model
@@ -91,6 +106,7 @@ We suggest using the best parameters from the best outer score with your full da
 
 ## What did we learn?
 - Using [Scikit-Learn](https://github.com/scikit-learn/scikit-learn) will lead to a faster implementation, since the Scikit-Learn community has implemented many functions that does much of the work.
+- We have learned and applied this package in our main project about [House Price Prediction](https://github.com/casperbh96/house-price-prediction) .
 
 ## Why use Nested Cross-Validation?
 Controlling the bias-variance tradeoff is an essential and important in machine learning, indicated by [[Cawley and Talbot, 2010]](http://jmlr.csail.mit.edu/papers/volume11/cawley10a/cawley10a.pdf). Many articles indicate that this is possible by the use of nested cross-validation, one of them by [Varma and Simon, 2006](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1397873/pdf/1471-2105-7-91.pdf). It has many applications and has many applications. Other interesting literature for nested cross-validation are [[Varoquaox et al., 2017]](https://arxiv.org/pdf/1606.05201.pdf) and [[Krstajic et al., 2014]](https://jcheminf.biomedcentral.com/track/pdf/10.1186/1758-2946-6-10).
