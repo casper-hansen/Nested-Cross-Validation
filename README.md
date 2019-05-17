@@ -7,12 +7,16 @@ Here is a single example using Random Forest
 # Define a parameters grid
 param_grid = {
      'max_depth': [3, None],
-     'n_estimators': np.random.randint(10,20,20)
+     'n_estimators': [100,200,300,400,500,600,700,800,900,1000],
+     'max_features' : [50,100,150,200] # Note: You might not have that many features
 }
 
 # Define parameters for function
-# If sqrt_of_score = True, the default scoring will be RMSE
-outer_score, best_inner_score, best_params = nested_cv(X, y, RandomForestRegressor(), param_grid, 5, 5, sqrt_of_score = True)
+# Default scoring: RMSE
+nested_CV_search = NestedCV(model=RandomForestRegressor(), params_grid=param_grid , outer_kfolds=5, inner_kfolds=5, 
+                      	    cv_options={'sqrt_of_score':True, 'randomized_search_iter':30})
+nested_CV_search.fit(X=X,y=y)
+print('\nCumulated best parameter grid was:\n{0}'.format(nested_CV_search.best_params))
 ```
 
 # Usage: Multiple algorithms
@@ -22,44 +26,40 @@ models_to_run = [RandomForestRegressor(), xgb.XGBRegressor(), lgb.LGBMRegressor(
 models_param_grid = [ 
                     { # 1st param grid, corresponding to RandomForestRegressor
                             'max_depth': [3, None],
-                            'n_estimators': np.random.randint(100,1000,20)
+                            'n_estimators': [100,200,300,400,500,600,700,800,900,1000],
+                            'max_features' : [50,100,150,200]
                     }, 
                     { # 2nd param grid, corresponding to XGBRegressor
+                            'learning_rate': [0.05],
                             'colsample_bytree': np.linspace(0.3, 0.5),
-                            'n_estimators': np.random.randint(100,1000,20)
+                            'n_estimators': [100,200,300,400,500,600,700,800,900,1000],
+                            'reg_alpha' : (1,1.2),
+                            'reg_lambda' : (1,1.2,1.4)
                     },
                     { # 3rd param grid, corresponding to LGBMRegressor
                             'learning_rate': [0.05],
-                            'n_estimators': np.random.randint(100,1000,20),
-                            'num_leaves': np.random.randint(10,30,10),
+                            'n_estimators': [100,200,300,400,500,600,700,800,900,1000],
                             'reg_alpha' : (1,1.2),
                             'reg_lambda' : (1,1.2,1.4)
                     }
                     ]
 
-# Allocate inner arrays for each algorithm being run
-outer_score = [ [] for i in range(len(models_to_run)) ]
-best_inner_score = [ [] for i in range(len(models_to_run)) ]
-best_params = [ [] for i in range(len(models_to_run)) ]
-
-# Define parameters for function and run different algorithms in a loop
-# If sqrt_of_score = True, the default scoring will be RMSE
 for i,model in enumerate(models_to_run):
-    outer_score[i], best_inner_score[i], best_params[i] = nested_cv(X, y, model, models_param_grid[i], 
-                                                                    5, 5, sqrt_of_score = True)
-# Print the output of nested_cv function
-for i,results in enumerate(zip(outer_score, best_inner_score, best_params)):
-    print('Outer scores, inner score and best params for model {0}: \n{1}\n{2}\n{3}\n'
-    .format(type(models_to_run[i]).__name__,results[0],results[1],results[2]))
+    nested_CV_search = NestedCV(model=model, params_grid=models_param_grid[i], outer_kfolds=5, inner_kfolds=5, 
+                      cv_options={'sqrt_of_score':True, 'randomized_search_iter':30})
+    nested_CV_search.fit(X=X,y=y)
+    model_param_grid = nested_CV_search.best_params
+
+    print('\nCumulated best parameter grid was:\n{0}'.format(model_param_grid))
 ```
 
 # How to use the output?
-We suggest using the best parameters from the best outer score with your full data in a GridSearch Cross-Validation. Alternatively, you can cumulative all the best parameters and run them in a gridsearch.
+We suggest using the best parameters from the best outer score with your full data in a GridSearch Cross-Validation. They can be accessed on the NestedCV object by `.best_params`
 
 # Limitations
 - [XGBoost](https://xgboost.readthedocs.io/en/latest/) implements a `early_stopping_rounds`, which cannot be used in this implementation. Other similar parameters might not work in combination with this implementation. The function will have to be adopted to use special parameters like that.
 - The function only works with [Pandas dataframes](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html), and does currently not support NumPy arrays.
-- No feature selection within the nested cross-validation.
+- Limited feature selection/elimination included (only executed after inner loop has run)
 
 # What did we learn?
 - Using [Scikit-Learn](https://github.com/scikit-learn/scikit-learn) will lead to a faster implementation, since the Scikit-Learn community has implemented many functions that does much of the work.
