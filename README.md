@@ -26,6 +26,7 @@ param_grid = {
 nested_CV_search = NestedCV(model=RandomForestRegressor(), params_grid=param_grid , outer_kfolds=5, inner_kfolds=5, 
                       	    cv_options={'sqrt_of_score':True, 'randomized_search_iter':30})
 nested_CV_search.fit(X=X,y=y)
+grid_nested_cv.score_vs_variance_plot()
 print('\nCumulated best parameter grid was:\n{0}'.format(nested_CV_search.best_params))
 ```
 
