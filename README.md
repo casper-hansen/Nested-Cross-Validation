@@ -105,6 +105,14 @@ We suggest using the best parameters from the best outer score with your full da
 - The function only works with [Pandas dataframes](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html), and does currently not support NumPy arrays.
 - Limited feature selection/elimination included (only executed after inner loop has run)
 
+### Neural Networks limitations
+- When searching for hyperparameters in a neural network in succession, you will quickly ramp us the RAM usage. It is therefore useful to use one of Keras' very useful line of code. You want to do this after EVERY time you fit. We noticed as much as a 5x speed up, and the code was much more stable. Instead of ramping up to 100% RAM usage, it stayed at about 25% RAM usage on a 16GB RAM machine:
+
+```python
+from keras import backend as K
+K.clear_session()
+```
+
 ## What did we learn?
 - Using [Scikit-Learn](https://github.com/scikit-learn/scikit-learn) will lead to a faster implementation, since the Scikit-Learn community has implemented many functions that does much of the work.
 - We have learned and applied this package in our main project about [House Price Prediction](https://github.com/casperbh96/house-price-prediction) .
