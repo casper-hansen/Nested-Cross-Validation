@@ -106,7 +106,7 @@ We suggest using the best parameters from the best outer score with your full da
 - Limited feature selection/elimination included (only executed after inner loop has run)
 
 ### Neural Networks limitations
-- When searching for hyperparameters in a neural network in succession, you will quickly ramp us the RAM usage. It is therefore useful to use one of Keras' very useful line of code. You want to do this after EVERY time you fit. We noticed as much as a 5x speed up, and the code was much more stable. Instead of ramping up to 100% RAM usage, it stayed at about 25% RAM usage on a 16GB RAM machine:
+- When searching for hyperparameters in a neural network in succession, you will quickly ramp up the RAM usage. It is therefore useful for you to use one of Keras' very useful line of code. You want to do this after every fit/training session. We noticed as much as a 5x speed up, and the code was much more stable. Instead of ramping up to 100% RAM usage, it stayed at about 25% RAM usage on a 16GB RAM machine:
 
 ```python
 from keras import backend as K
