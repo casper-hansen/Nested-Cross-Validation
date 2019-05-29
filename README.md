@@ -98,7 +98,10 @@ for i,model in enumerate(models_to_run):
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Whether to do feature elimination
 
 ## How to use the output?
-We suggest using the best parameters from the best outer score with your full data in a GridSearch Cross-Validation. They can be accessed on the NestedCV object by `.best_params`
+We suggest looking at the best hyperparameters together with the score for each outer loop. Look at how stable the model appears to be in a nested cross-validation setting. If the outer score changes a lot, then it might indicate instability in your model. In that case, start over with making a new model.
+
+### After Nested Cross-Validation?
+If the results from nested cross-validation are stable: Run a normal cross-validation with the same procedure as in nested cross-validation, i.e. if you used feature selection in nested cross-validation, you should also do that in normal cross-validation.
 
 ## Limitations
 - [XGBoost](https://xgboost.readthedocs.io/en/latest/) implements a `early_stopping_rounds`, which cannot be used in this implementation. Other similar parameters might not work in combination with this implementation. The function will have to be adopted to use special parameters like that.
@@ -115,7 +118,7 @@ K.clear_session()
 
 ## What did we learn?
 - Using [Scikit-Learn](https://github.com/scikit-learn/scikit-learn) will lead to a faster implementation, since the Scikit-Learn community has implemented many functions that does much of the work.
-- We have learned and applied this package in our main project about [House Price Prediction](https://github.com/casperbh96/house-price-prediction) .
+- We have learned and applied this package in our main project about [House Price Prediction](https://github.com/casperbh96/house-price-prediction).
 
 ## Why use Nested Cross-Validation?
 Controlling the bias-variance tradeoff is an essential and important in machine learning, indicated by [[Cawley and Talbot, 2010]](http://jmlr.csail.mit.edu/papers/volume11/cawley10a/cawley10a.pdf). Many articles indicate that this is possible by the use of nested cross-validation, one of them by [Varma and Simon, 2006](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1397873/pdf/1471-2105-7-91.pdf). It has many applications and has many applications. Other interesting literature for nested cross-validation are [[Varoquaox et al., 2017]](https://arxiv.org/pdf/1606.05201.pdf) and [[Krstajic et al., 2014]](https://jcheminf.biomedcentral.com/track/pdf/10.1186/1758-2946-6-10).
