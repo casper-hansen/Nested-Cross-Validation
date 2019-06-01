@@ -45,6 +45,12 @@ class NestedCV():
 
         recursive_feature_elimination : boolean, default = False
             Whether to do feature elimination
+            
+        verbose : int, default = 0
+            verbose = 0, print nothing
+            verbose = 1, print details for outer loop
+            verbose = 2, print details for outer loop and inner loop
+            verbose = 3, print details for outer loop, inner loop and parameter loop
     '''
 
     def __init__(self, model, params_grid, outer_kfolds, inner_kfolds, cv_options={}):
