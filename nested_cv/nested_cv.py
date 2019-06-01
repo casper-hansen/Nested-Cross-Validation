@@ -5,7 +5,6 @@ import numpy as np
 from sklearn.metrics import mean_squared_error
 from sklearn.feature_selection import RFE, RFECV
 
-
 class NestedCV():
     '''A general class to handle nested cross-validation for any estimator that
     implements the scikit-learn estimator interface.
@@ -44,9 +43,14 @@ class NestedCV():
             Number of iterations for randomized search
 
         recursive_feature_elimination : boolean, default = False
-            Whether to do feature elimination
+            Whether to do recursive feature selection (rfe) for each set of different hyperparameters
+            in the inner most loop of the fit function.
+        
+        rfe_n_features : int, default = 1
+            If recursive_feature_elimination is enabled, select n number of features
             
         verbose : int, default = 0
+            Verbose levels that control how many details is printed.
             verbose = 0, print nothing
             verbose = 1, print details for outer loop
             verbose = 2, print details for outer loop and inner loop
@@ -67,6 +71,8 @@ class NestedCV():
             'randomized_search_iter', 10)
         self.recursive_feature_elimination = cv_options.get(
             'recursive_feature_elimination', False)
+        self.rfe_n_features = cv_options.get(
+            'rfe_n_features', 0)
         self.verbose = cv_options.get(
             'verbose', 0)
         self.outer_scores = []
@@ -92,26 +98,16 @@ class NestedCV():
                     params_dict[key] = [value]
         return params_dict
 
-    # a method to handle  recursive feature elimination
+    # a function to handle recursive feature elimination
     def _fit_recursive_feature_elimination(self, best_inner_params, X_train_outer, y_train_outer, X_test_outer):
-        if(self.verbose > 0):
-            print('\nRunning recursive feature elimination for outer loop... (SLOW)')
-        
-        # K-fold (inner_kfolds) recursive feature elimination
-        rfe = RFECV(estimator=self.model, min_features_to_select=20,
-                    scoring='neg_mean_squared_error', cv=self.inner_kfolds, n_jobs=-1)
+        rfe = RFECV(estimator=self.model, min_features_to_select=self.rfe_n_features, cv=self.inner_kfolds)
         rfe.fit(X_train_outer, y_train_outer)
-
-        # Assign selected features to data
-        if(self.verbose > 0):
+        
+        if(self.verbose > 2):
             print('Best number of features was: {0}'.format(rfe.n_features_))
-        X_train_outer_rfe = rfe.transform(X_train_outer)
-        X_test_outer_rfe = rfe.transform(X_test_outer)
-
-        # Train model with best inner parameters on the outer split
-        self.model.set_params(**best_inner_params)
-        self.model.fit(X_train_outer_rfe, y_train_outer)
-        return self.model.predict(X_test_outer_rfe)
+        
+        # Assign selected features to data
+        return rfe.transform(X_train_outer), rfe.transform(X_test_outer)
 
     def fit(self, X, y):
         '''A method to fit nested cross-validation 
@@ -148,7 +144,7 @@ class NestedCV():
         if(self.verbose > 0):
             print('\n{0} <-- Running this model now'.format(type(self.model).__name__))
         
-        # If Pandas dataframe, convert to array
+        # If Pandas dataframe or series, convert to array
         if isinstance(X, pd.DataFrame) or isinstance(X, pd.Series):
             X = X.to_numpy()
         if isinstance(y, pd.DataFrame) or isinstance(y, pd.Series):
@@ -179,15 +175,21 @@ class NestedCV():
                 
                 X_train_inner, X_test_inner = X_train_outer[train_index_inner], X_train_outer[test_index_inner]
                 y_train_inner, y_test_inner = y_train_outer[train_index_inner], y_train_outer[test_index_inner]
-    
+                
                 # Run either RandomizedSearch or GridSearch for input parameters
                 for param_dict in ParameterSampler(param_distributions=self.params_grid, 
                                                    n_iter=self.randomized_search_iter) if (self.randomized_search) else (
                                                            ParameterGrid(param_grid=self.params_grid)):
                     if(self.verbose > 2):
                         print('\n\tFitting these parameters:\n\t{0}'.format(param_dict))
-                    # Set parameters, train model on inner split, predict results.
+                    # Set hyperparameters, train model on inner split, predict results.
                     model.set_params(**param_dict)
+                    
+                    if self.recursive_feature_elimination:
+                        X_train_inner, X_test_inner = self._fit_recursive_feature_elimination(
+                            best_inner_params, X_train_inner, y_train_inner, X_test_inner)
+                    
+                    # Fit model with current hyperparameters and score it
                     model.fit(X_train_inner, y_train_inner)
                     inner_pred = model.predict(X_test_inner)
                     inner_grid_score = self.metric(y_test_inner, inner_pred)
@@ -211,14 +213,10 @@ class NestedCV():
             best_inner_params_list.append(best_inner_params)
             best_inner_score_list.append(best_inner_score)
     
-            if self.recursive_feature_elimination:
-                pred = self._fit_recursive_feature_elimination(
-                    best_inner_params, X_train_outer, y_train_outer, X_test_outer)
-            else:
-                # Train model with best inner parameters on the outer split
-                model.set_params(**best_inner_params)
-                model.fit(X_train_outer, y_train_outer)
-                pred = model.predict(X_test_outer)
+            # Fit the best hyperparameters from one of the K inner loops
+            model.set_params(**best_inner_params)
+            model.fit(X_train_outer, y_train_outer)
+            pred = model.predict(X_test_outer)
     
             outer_scores.append(self._transform_score_format(
                 self.metric(y_test_outer, pred)))
