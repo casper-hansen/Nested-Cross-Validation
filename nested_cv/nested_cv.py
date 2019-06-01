@@ -1,9 +1,10 @@
 import pandas as pd
+import numpy as np
 from matplotlib import pyplot as plt
 from sklearn.model_selection import KFold, ParameterGrid, ParameterSampler
-import numpy as np
 from sklearn.metrics import mean_squared_error
-from sklearn.feature_selection import RFE, RFECV
+from sklearn.feature_selection import RFECV
+from sklearn.utils.multiclass import type_of_target
 
 class NestedCV():
     '''A general class to handle nested cross-validation for any estimator that
@@ -75,6 +76,8 @@ class NestedCV():
             'rfe_n_features', 0)
         self.verbose = cv_options.get(
             'verbose', 0)
+        self.predict_proba = cv_options.get(
+            'predict_proba', False)
         self.outer_scores = []
         self.best_params = {}
         self.best_inner_score_list = []
@@ -108,6 +111,16 @@ class NestedCV():
         
         # Assign selected features to data
         return rfe.transform(X_train_outer), rfe.transform(X_test_outer)
+    
+    def _predict_and_score(self, X_test, y_test):
+        #XXX: Implement type_of_target(y)
+        
+        if(self.predict_proba):
+            pred = self.model.predict_proba(X_test)[:,1]
+        else:
+            pred = self.model.predict(X_test)
+        
+        return self.metric(y_test, pred), pred
 
     def fit(self, X, y):
         '''A method to fit nested cross-validation 
@@ -152,7 +165,6 @@ class NestedCV():
         
         outer_cv = KFold(n_splits=self.outer_kfolds, shuffle=True)
         inner_cv = KFold(n_splits=self.inner_kfolds, shuffle=True)
-        model = self.model
     
         outer_scores = []
         variance = []
@@ -183,16 +195,18 @@ class NestedCV():
                     if(self.verbose > 2):
                         print('\n\tFitting these parameters:\n\t{0}'.format(param_dict))
                     # Set hyperparameters, train model on inner split, predict results.
-                    model.set_params(**param_dict)
+                    self.model.set_params(**param_dict)
                     
                     if self.recursive_feature_elimination:
                         X_train_inner, X_test_inner = self._fit_recursive_feature_elimination(
                             best_inner_params, X_train_inner, y_train_inner, X_test_inner)
                     
                     # Fit model with current hyperparameters and score it
-                    model.fit(X_train_inner, y_train_inner)
-                    inner_pred = model.predict(X_test_inner)
-                    inner_grid_score = self.metric(y_test_inner, inner_pred)
+                    self.model.fit(X_train_inner, y_train_inner)
+                    
+                    # Predict and score model
+                    inner_grid_score, inner_pred = self._predict_and_score(X_test_inner, y_test_inner)
+                    
                     current_inner_score_value = best_inner_score
     
                     # Find best score and corresponding best grid
@@ -214,12 +228,12 @@ class NestedCV():
             best_inner_score_list.append(best_inner_score)
     
             # Fit the best hyperparameters from one of the K inner loops
-            model.set_params(**best_inner_params)
-            model.fit(X_train_outer, y_train_outer)
-            pred = model.predict(X_test_outer)
-    
-            outer_scores.append(self._transform_score_format(
-                self.metric(y_test_outer, pred)))
+            self.model.set_params(**best_inner_params)
+            self.model.fit(X_train_outer, y_train_outer)
+            
+            # Get score and prediction
+            score,pred = self._predict_and_score(X_test_outer, y_test_outer)
+            outer_scores.append(self._transform_score_format(score))
     
             # Append variance
             variance.append(np.var(pred, ddof=1))
