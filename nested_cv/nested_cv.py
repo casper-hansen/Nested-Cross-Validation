@@ -1,7 +1,6 @@
 import logging as log
 import pandas as pd
 import numpy as np
-import logging as log
 from matplotlib import pyplot as plt
 from sklearn.model_selection import KFold, ParameterGrid, ParameterSampler
 from sklearn.metrics import mean_squared_error
