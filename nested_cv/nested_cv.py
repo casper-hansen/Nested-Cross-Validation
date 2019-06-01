@@ -109,7 +109,11 @@ class NestedCV():
         #XXX: Implement type_of_target(y)
         
         if(self.predict_proba):
-            pred = self.model.predict_proba(X_test)[:,1]
+            y_type = type_of_target(y_test)
+            if(y_type in ('binary')):
+                pred = self.model.predict_proba(X_test)[:,1]
+            elif(y_type not in ('binary')):
+                raise ValueError('{0} is not support yet in nested cross-validation'.format(y_type))
         else:
             pred = self.model.predict(X_test)
         
