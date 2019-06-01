@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import logging as log
 from matplotlib import pyplot as plt
 from sklearn.model_selection import KFold, ParameterGrid, ParameterSampler
 from sklearn.metrics import mean_squared_error
@@ -49,13 +50,6 @@ class NestedCV():
         
         rfe_n_features : int, default = 1
             If recursive_feature_elimination is enabled, select n number of features
-            
-        verbose : int, default = 0
-            Verbose levels that control how many details is printed.
-            verbose = 0, print nothing
-            verbose = 1, print details for outer loop
-            verbose = 2, print details for outer loop and inner loop
-            verbose = 3, print details for outer loop, inner loop and parameter loop
     '''
 
     def __init__(self, model, params_grid, outer_kfolds, inner_kfolds, cv_options={}):
@@ -74,8 +68,6 @@ class NestedCV():
             'recursive_feature_elimination', False)
         self.rfe_n_features = cv_options.get(
             'rfe_n_features', 0)
-        self.verbose = cv_options.get(
-            'verbose', 0)
         self.predict_proba = cv_options.get(
             'predict_proba', False)
         self.outer_scores = []
@@ -106,8 +98,7 @@ class NestedCV():
         rfe = RFECV(estimator=self.model, min_features_to_select=self.rfe_n_features, cv=self.inner_kfolds)
         rfe.fit(X_train_outer, y_train_outer)
         
-        if(self.verbose > 2):
-            print('Best number of features was: {0}'.format(rfe.n_features_))
+        log.info('Best number of features was: {0}'.format(rfe.n_features_))
         
         # Assign selected features to data
         return rfe.transform(X_train_outer), rfe.transform(X_test_outer)
@@ -154,8 +145,8 @@ class NestedCV():
             Best inner params for each outer loop as an array of dictionaries
         '''
         
-        if(self.verbose > 0):
-            print('\n{0} <-- Running this model now'.format(type(self.model).__name__))
+        log.debug(
+            '\n{0} <-- Running this model now'.format(type(self.model).__name__))
         
         # If Pandas dataframe or series, convert to array
         if isinstance(X, pd.DataFrame) or isinstance(X, pd.Series):
@@ -173,8 +164,8 @@ class NestedCV():
     
         # Split X and y into K-partitions to Outer CV
         for (i, (train_index, test_index)) in enumerate(outer_cv.split(X, y)):
-            if(self.verbose > 0):
-                print('\n{0}/{1} <-- Current outer fold'.format(i+1, self.outer_kfolds))
+            log.debug(
+                '\n{0}/{1} <-- Current outer fold'.format(i+1, self.outer_kfolds))
             X_train_outer, X_test_outer = X[train_index], X[test_index]
             y_train_outer, y_test_outer = y[train_index], y[test_index]
             best_inner_params = {}
@@ -182,8 +173,8 @@ class NestedCV():
     
             # Split X_train_outer and y_train_outer into K-partitions to be inner CV
             for (j, (train_index_inner, test_index_inner)) in enumerate(inner_cv.split(X_train_outer, y_train_outer)):
-                if(self.verbose > 1):
-                    print('\n\t{0}/{1} <-- Current inner fold'.format(j+1, self.inner_kfolds))
+                log.debug(
+                    '\n\t{0}/{1} <-- Current inner fold'.format(j+1, self.inner_kfolds))
                 
                 X_train_inner, X_test_inner = X_train_outer[train_index_inner], X_train_outer[test_index_inner]
                 y_train_inner, y_test_inner = y_train_outer[train_index_inner], y_train_outer[test_index_inner]
@@ -192,8 +183,8 @@ class NestedCV():
                 for param_dict in ParameterSampler(param_distributions=self.params_grid, 
                                                    n_iter=self.randomized_search_iter) if (self.randomized_search) else (
                                                            ParameterGrid(param_grid=self.params_grid)):
-                    if(self.verbose > 2):
-                        print('\n\tFitting these parameters:\n\t{0}'.format(param_dict))
+                    log.debug(
+                        '\n\tFitting these parameters:\n\t{0}'.format(param_dict))
                     # Set hyperparameters, train model on inner split, predict results.
                     self.model.set_params(**param_dict)
                     
@@ -238,11 +229,10 @@ class NestedCV():
             # Append variance
             variance.append(np.var(pred, ddof=1))
 
-            if(self.verbose > 1):
-                print('\nResults for outer fold:\nBest inner parameters was: {0}'.format(
-                    best_inner_params_list[i]))
-                print('Outer score: {0}'.format(outer_scores[i]))
-                print('Inner score: {0}'.format(best_inner_score_list[i]))
+            log.debug('\nResults for outer fold:\nBest inner parameters was: {0}'.format(
+                best_inner_params_list[i]))
+            log.debug('Outer score: {0}'.format(outer_scores[i]))
+            log.debug('Inner score: {0}'.format(best_inner_score_list[i]))
     
         self.variance = variance
         self.outer_scores = outer_scores
