@@ -21,7 +21,7 @@ setup(
   install_requires=[        
           'pandas',
           'matplotlib',
-          'sklearn',
+          'scikit-learn',
           'numpy',
       ],
   classifiers=[
