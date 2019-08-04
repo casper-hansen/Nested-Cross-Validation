@@ -7,7 +7,6 @@ from sklearn.metrics import mean_squared_error
 from sklearn.feature_selection import RFECV
 from sklearn.utils.multiclass import type_of_target
 
-
 class NestedCV():
     '''A general class to handle nested cross-validation for any estimator that
     implements the scikit-learn estimator interface.
@@ -112,11 +111,12 @@ class NestedCV():
             y_type = type_of_target(y_test)
             if(y_type in ('binary')):
                 pred = self.model.predict_proba(X_test)[:,1]
-            elif(y_type not in ('binary')):
-                raise ValueError('{0} is not support yet in nested cross-validation'.format(y_type))
+            else:
+                pred = self.model.predict_proba(X_test)
+                
         else:
             pred = self.model.predict(X_test)
-        
+            
         return self.metric(y_test, pred), pred
 
     def fit(self, X, y):
@@ -153,6 +153,9 @@ class NestedCV():
         
         log.debug(
             '\n{0} <-- Running this model now'.format(type(self.model).__name__))
+
+        self.X = X
+        self.y = y
 
         # If Pandas dataframe or series, convert to array
         if isinstance(X, pd.DataFrame) or isinstance(X, pd.Series):
