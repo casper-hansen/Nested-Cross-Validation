@@ -125,8 +125,6 @@ If the results from nested cross-validation are stable: Run a normal cross-valid
 
 ## Limitations
 - [XGBoost](https://xgboost.readthedocs.io/en/latest/) implements a `early_stopping_rounds`, which cannot be used in this implementation. Other similar parameters might not work in combination with this implementation. The function will have to be adopted to use special parameters like that.
-- The function only works with [Pandas dataframes](https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.html), and does currently not support NumPy arrays.
-- Limited feature selection/elimination included (only executed after inner loop has run)
 
 ### Neural Networks limitations
 - When searching for hyperparameters in a neural network in succession, you will quickly ramp up the RAM usage. It is therefore useful for you to use one of Keras' very useful line of code. You want to do this after every fit/training session. We noticed as much as a 5x speed up, and the code was much more stable. Instead of ramping up to 100% RAM usage, it stayed at about 25% RAM usage on a 16GB RAM machine:
@@ -141,4 +139,4 @@ K.clear_session()
 - We have learned and applied this package in our main project about [House Price Prediction](https://github.com/casperbh96/house-price-prediction).
 
 ## Why use Nested Cross-Validation?
-Controlling the bias-variance tradeoff is an essential and important in machine learning, indicated by [[Cawley and Talbot, 2010]](http://jmlr.csail.mit.edu/papers/volume11/cawley10a/cawley10a.pdf). Many articles indicate that this is possible by the use of nested cross-validation, one of them by [Varma and Simon, 2006](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1397873/pdf/1471-2105-7-91.pdf). It has many applications and has many applications. Other interesting literature for nested cross-validation are [[Varoquaox et al., 2017]](https://arxiv.org/pdf/1606.05201.pdf) and [[Krstajic et al., 2014]](https://jcheminf.biomedcentral.com/track/pdf/10.1186/1758-2946-6-10).
+Controlling the bias-variance tradeoff is an essential and important task in machine learning, indicated by [[Cawley and Talbot, 2010]](http://jmlr.csail.mit.edu/papers/volume11/cawley10a/cawley10a.pdf). Many articles indicate that this is possible by the use of nested cross-validation, one of them by [Varma and Simon, 2006](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1397873/pdf/1471-2105-7-91.pdf). It has many applications and has many applications. Other interesting literature for nested cross-validation are [[Varoquaox et al., 2017]](https://arxiv.org/pdf/1606.05201.pdf) and [[Krstajic et al., 2014]](https://jcheminf.biomedcentral.com/track/pdf/10.1186/1758-2946-6-10).
