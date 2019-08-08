@@ -50,6 +50,13 @@ class NestedCV():
 
         rfe_n_features : int, default = 1
             If recursive_feature_elimination is enabled, select n number of features
+        
+        predict_proba : boolean, default = False
+            If true, predict probabilities instead for a class, instead of predicting a class
+        
+        multiclass_average : string, default = 'binary'
+            For some classification metrics with a multiclass prediction, you need to specify an
+            average other than 'binary'
     '''
 
     def __init__(self, model, params_grid, outer_kfolds, inner_kfolds, cv_options={}):
@@ -70,6 +77,8 @@ class NestedCV():
             'rfe_n_features', 0)
         self.predict_proba = cv_options.get(
             'predict_proba', False)
+        self.multiclass_average = cv_options.get(
+            'multiclass_average', 'binary')
         self.outer_scores = []
         self.best_params = {}
         self.best_inner_score_list = []
@@ -116,8 +125,11 @@ class NestedCV():
                 
         else:
             pred = self.model.predict(X_test)
-            
-        return self.metric(y_test, pred), pred
+        
+        if(self.multiclass_average == 'binary'):
+            return self.metric(y_test, pred), pred
+        else:
+            return self.metric(y_test, pred, average=self.multiclass_average), pred
 
     def fit(self, X, y):
         '''A method to fit nested cross-validation 
