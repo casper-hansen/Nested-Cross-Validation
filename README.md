@@ -106,6 +106,16 @@ for i,model in enumerate(models_to_run):
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For some classification metrics with a multiclass prediction, you need to specify an
             average other than 'binary'
 
+### Returns
+**`variance` :** Model variance by numpy.var()
+
+**`outer_scores` :** A list of the outer scores, from the outer cross-validation
+
+**`best_inner_score_list` :** A list of best inner scores for each outer loop
+
+**`best_params` :** All best params from each inner loop cumulated in a dict
+
+**`best_inner_params_list` :** Best inner params for each outer loop as an array of dictionaries
 
 ## How to use the output?
 We suggest looking at the best hyperparameters together with the score for each outer loop. Look at how stable the model appears to be in a nested cross-validation setting. If the outer score changes a lot, then it might indicate instability in your model. In that case, start over with making a new model.
