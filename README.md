@@ -97,6 +97,16 @@ for i,model in enumerate(models_to_run):
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Whether to do feature elimination
 
+**`predict_proba` :** boolean, default = False
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;If true, predict probabilities instead for a class, instead of predicting a class
+
+**`multiclass_average` :** string, default = 'binary'
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;For some classification metrics with a multiclass prediction, you need to specify an
+            average other than 'binary'
+
+
 ## How to use the output?
 We suggest looking at the best hyperparameters together with the score for each outer loop. Look at how stable the model appears to be in a nested cross-validation setting. If the outer score changes a lot, then it might indicate instability in your model. In that case, start over with making a new model.
 
