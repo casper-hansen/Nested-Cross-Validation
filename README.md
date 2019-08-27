@@ -10,7 +10,8 @@ You can also install it from the wheel file on the [Releases](https://github.com
 \* we gradually push updates, pull this master from github if you want the absolute latest changes.
 
 ## Usage
-Be mindful of the options that are available for NestedCV. Some cross-validation options are defined in a dictionary `cv_options`:
+Be mindful of the options that are available for NestedCV. Some cross-validation options are defined in a dictionary `cv_options`.
+This package is optimized for any estimator that implements a scikit-learn wrapper, e.g. XGBoost, LightGBM, KerasRegressor, KerasClassifier etc.
 
 ### Single algorithm
 Here is a single example using Random Forest
@@ -74,6 +75,7 @@ for i,model in enumerate(models_to_run):
 | outer_kfolds | int      |    Number of outer K-partitions in KFold |
 | inner_kfolds | int      | Number of inner K-partitions in KFold    | 
 | cv_options | dictionary "dict"      |    [Next section](#cv_options-value-options) |
+| n_jobs | int      | Number of jobs for joblib to run (multiprocessing)    | 
 
 ### `cv_options` value options
 **`metric` :** Callable from sklearn.metrics, default = mean_squared_error
@@ -129,17 +131,9 @@ If the results from nested cross-validation are stable: Run a normal cross-valid
 ## Limitations
 - [XGBoost](https://xgboost.readthedocs.io/en/latest/) implements a `early_stopping_rounds`, which cannot be used in this implementation. Other similar parameters might not work in combination with this implementation. The function will have to be adopted to use special parameters like that.
 
-### Neural Networks limitations
-- When searching for hyperparameters in a neural network in succession, you will quickly ramp up the RAM usage. It is therefore useful for you to use one of Keras' very useful line of code. You want to do this after every fit/training session. We noticed as much as a 5x speed up, and the code was much more stable. Instead of ramping up to 100% RAM usage, it stayed at about 25% RAM usage on a 16GB RAM machine:
-
-```python
-from keras import backend as K
-K.clear_session()
-```
-
 ## What did we learn?
 - Using [Scikit-Learn](https://github.com/scikit-learn/scikit-learn) will lead to a faster implementation, since the Scikit-Learn community has implemented many functions that does much of the work.
 - We have learned and applied this package in our main project about [House Price Prediction](https://github.com/casperbh96/house-price-prediction).
 
 ## Why use Nested Cross-Validation?
-Controlling the bias-variance tradeoff is an essential and important task in machine learning, indicated by [[Cawley and Talbot, 2010]](http://jmlr.csail.mit.edu/papers/volume11/cawley10a/cawley10a.pdf). Many articles indicate that this is possible by the use of nested cross-validation, one of them by [Varma and Simon, 2006](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1397873/pdf/1471-2105-7-91.pdf). It has many applications and has many applications. Other interesting literature for nested cross-validation are [[Varoquaox et al., 2017]](https://arxiv.org/pdf/1606.05201.pdf) and [[Krstajic et al., 2014]](https://jcheminf.biomedcentral.com/track/pdf/10.1186/1758-2946-6-10).
+Controlling the bias-variance tradeoff is an essential and important task in machine learning, indicated by [[Cawley and Talbot, 2010]](http://jmlr.csail.mit.edu/papers/volume11/cawley10a/cawley10a.pdf). Many articles indicate that this is possible by the use of nested cross-validation, one of them by [Varma and Simon, 2006](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC1397873/pdf/1471-2105-7-91.pdf). Other interesting literature for nested cross-validation are [[Varoquaox et al., 2017]](https://arxiv.org/pdf/1606.05201.pdf) and [[Krstajic et al., 2014]](https://jcheminf.biomedcentral.com/track/pdf/10.1186/1758-2946-6-10).
