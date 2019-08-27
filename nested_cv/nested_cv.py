@@ -60,11 +60,12 @@ class NestedCV():
             average other than 'binary'
     '''
 
-    def __init__(self, model, params_grid, outer_kfolds, inner_kfolds, cv_options={}):
+    def __init__(self, model, params_grid, outer_kfolds, inner_kfolds, n_jobs = 1, cv_options={}):
         self.model = model
         self.params_grid = params_grid
         self.outer_kfolds = outer_kfolds
         self.inner_kfolds = inner_kfolds
+        self.n_jobs = n_jobs
         self.metric = cv_options.get('metric', mean_squared_error)
         self.metric_score_indicator_lower = cv_options.get(
             'metric_score_indicator_lower', True)
@@ -235,9 +236,9 @@ class NestedCV():
                     # Set hyperparameters, train model on inner split, predict results.
                     self.model.set_params(**param_dict)
 
-                    #if self.recursive_feature_elimination:
-                    #    X_train_inner, X_test_inner = self._fit_recursive_feature_elimination(
-                    #        best_inner_params, X_train_inner, y_train_inner, X_test_inner)
+                    if self.recursive_feature_elimination:
+                        X_train_inner, X_test_inner = self._fit_recursive_feature_elimination(
+                            best_inner_params, X_train_inner, y_train_inner, X_test_inner)
 
                     # Fit model with current hyperparameters and score it
                     self.model.fit(X_train_inner, y_train_inner)
@@ -247,7 +248,7 @@ class NestedCV():
                     
                     return self._transform_score_format(inner_grid_score), param_dict
             
-                results = Parallel(n_jobs=1)(delayed(_parallel_fitting)(
+                results = Parallel(n_jobs=self.n_jobs)(delayed(_parallel_fitting)(
                                                     X_train_inner, X_test_inner,
                                                     y_train_inner, y_test_inner,
                                                     param_dict=parameters)
@@ -258,8 +259,13 @@ class NestedCV():
                 #print(results[1])
                 #print("result: ",results[0], "+",results[1])
                 #best_inner_params, best_inner_score = self._best_of_results(results[0], results[1])
-            print(search_scores)
-            print('mininimum: ',min(search_scores))
+            #print(search_scores)
+            #print('mininimum p: ',min(search_scores)[1])
+            #print('mininimum s: ',min(search_scores)[0])
+            
+            best_inner_params = min(search_scores)[1]
+            best_inner_score = min(search_scores)[0]        
+            
             best_inner_params_list.append(best_inner_params)
             best_inner_score_list.append(best_inner_score)
 
