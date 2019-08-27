@@ -13,60 +13,26 @@ You can also install it from the wheel file on the [Releases](https://github.com
 Be mindful of the options that are available for NestedCV. Some cross-validation options are defined in a dictionary `cv_options`.
 This package is optimized for any estimator that implements a scikit-learn wrapper, e.g. XGBoost, LightGBM, KerasRegressor, KerasClassifier etc.
 
-### Single algorithm
-Here is a single example using Random Forest
+-->**[See notebook for more examples](https://github.com/casperbh96/Nested-Cross-Validation/blob/master/Example%20Notebook%20-%20NestedCV.ipynb)**
+
+### Simple
+Here is a single example using Random Forest. Check out the example notebook for more.
 ```python
-#import the package 
-from nested_cv import NestedCV
 # Define a parameters grid
 param_grid = {
      'max_depth': [3, None],
-     'n_estimators': [100,200,300,400,500,600,700,800,900,1000],
-     'max_features' : [50,100,150,200] # Note: You might not have that many features
+     'n_estimators': [10]
 }
 
-# Define parameters for function
-# Default scoring: RMSE
-nested_CV_search = NestedCV(model=RandomForestRegressor(), params_grid=param_grid , outer_kfolds=5, inner_kfolds=5, 
-                      	    cv_options={'sqrt_of_score':True, 'randomized_search_iter':30})
-nested_CV_search.fit(X=X,y=y)
-grid_nested_cv.score_vs_variance_plot()
-print('\nCumulated best parameter grid was:\n{0}'.format(nested_CV_search.best_params))
+NCV = NestedCV(model=RandomForestRegressor(), params_grid=param_grid,
+               outer_kfolds=5, inner_kfolds=5, n_jobs = -1,
+               cv_options={'sqrt_of_score':True, 
+                           'recursive_feature_elimination':True, 
+                           'rfe_n_features':2})
+NCV.fit(X=X,y=y)
+NCV.outer_scores
 ```
 
-### Multiple algorithms
-Here is an example using Random Forest, XGBoost and LightGBM.
-```python
-models_to_run = [RandomForestRegressor(), xgb.XGBRegressor(), lgb.LGBMRegressor()]
-models_param_grid = [ 
-                    { # 1st param grid, corresponding to RandomForestRegressor
-                            'max_depth': [3, None],
-                            'n_estimators': [100,200,300,400,500,600,700,800,900,1000],
-                            'max_features' : [50,100,150,200]
-                    }, 
-                    { # 2nd param grid, corresponding to XGBRegressor
-                            'learning_rate': [0.05],
-                            'colsample_bytree': np.linspace(0.3, 0.5),
-                            'n_estimators': [100,200,300,400,500,600,700,800,900,1000],
-                            'reg_alpha' : (1,1.2),
-                            'reg_lambda' : (1,1.2,1.4)
-                    },
-                    { # 3rd param grid, corresponding to LGBMRegressor
-                            'learning_rate': [0.05],
-                            'n_estimators': [100,200,300,400,500,600,700,800,900,1000],
-                            'reg_alpha' : (1,1.2),
-                            'reg_lambda' : (1,1.2,1.4)
-                    }
-                    ]
-
-for i,model in enumerate(models_to_run):
-    nested_CV_search = NestedCV(model=model, params_grid=models_param_grid[i], outer_kfolds=5, inner_kfolds=5, 
-                      cv_options={'sqrt_of_score':True, 'randomized_search_iter':30})
-    nested_CV_search.fit(X=X,y=y)
-    model_param_grid = nested_CV_search.best_params
-
-    print('\nCumulated best parameter grid was:\n{0}'.format(model_param_grid))
-```
 ### NestedCV Parameters 
 | Name        | type           | description  |
 | :------------- |:-------------| :-----|
