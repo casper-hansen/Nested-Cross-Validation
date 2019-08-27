@@ -1,11 +1,14 @@
 # Nested-Cross-Validation
 This repository implements a general nested cross-validation function. Ready to use with ANY estimator that implements the Scikit-Learn estimator interface.
 ## Installing the pacakge:
-You can find the package on [pypi](https://pypi.org/project/nested-cv/) and install it via pip by using the following command:
+You can find the package on [pypi](https://pypi.org/project/nested-cv/)* and install it via pip by using the following command:
 ```bash
 pip install nested-cv
 ```
 You can also install it from the wheel file on the [Releases](https://github.com/casperbh96/Nested-Cross-Validation/releases) page.
+
+\* we gradually push updates, pull this master from github if you want the absolute latest changes.
+
 ## Usage
 Be mindful of the options that are available for NestedCV. Some cross-validation options are defined in a dictionary `cv_options`:
 
