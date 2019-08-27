@@ -25,6 +25,8 @@ class NestedCV():
 
     inner_kfolds : int
         Number of inner K-partitions in KFold
+    n_jobs : int
+        Number of jobs to run in parallel
 
     cv_options: dict, default = {}
         Nested Cross-Validation Options, check docs for details.
@@ -39,7 +41,7 @@ class NestedCV():
         sqrt_of_score : boolean, default = False
             Whether or not the square root should be taken of score
 
-        randomized_search : boolean, default = True
+        randomized_search : boolean, default = False
             Whether to use gridsearch or randomizedsearch from sklearn
 
         randomized_search_iter : int, default = 10
@@ -70,7 +72,7 @@ class NestedCV():
         self.metric_score_indicator_lower = cv_options.get(
             'metric_score_indicator_lower', True)
         self.sqrt_of_score = cv_options.get('sqrt_of_score', False)
-        self.randomized_search = cv_options.get('randomized_search', True)
+        self.randomized_search = cv_options.get('randomized_search', False)
         self.randomized_search_iter = cv_options.get(
             'randomized_search_iter', 10)
         self.recursive_feature_elimination = cv_options.get(
@@ -105,9 +107,9 @@ class NestedCV():
         return params_dict
 
     # a function to handle recursive feature elimination
-    def _fit_recursive_feature_elimination(self, best_inner_params, X_train_outer, y_train_outer, X_test_outer):
+    def _fit_recursive_feature_elimination(self, X_train_outer, y_train_outer, X_test_outer):
         rfe = RFECV(estimator=self.model,
-                    min_features_to_select=self.rfe_n_features, cv=self.inner_kfolds)
+                    min_features_to_select=self.rfe_n_features, cv=self.inner_kfolds, n_jobs = self.n_jobs)
         rfe.fit(X_train_outer, y_train_outer)
         
         log.info('Best number of features was: {0}'.format(rfe.n_features_))
@@ -132,34 +134,21 @@ class NestedCV():
             return self.metric(y_test, pred), pred
         else:
             return self.metric(y_test, pred, average=self.multiclass_average), pred
-    def _best_of_results(results):
-        print(results)
-        #print(inner_params)
-        '''
-        current_inner_score_value = best_inner_score
+    def _best_of_results(self, results):
+        best_score = None
+        best_parameters = {}
         
-        # Find best score and corresponding best grid
-        if(best_inner_score is not None):
-            if(self.metric_score_indicator_lower and best_inner_score > inner_grid_score):
-                best_inner_score = self._transform_score_format(
-                    inner_grid_score)
-
-            elif (not self.metric_score_indicator_lower and best_inner_score < inner_grid_score):
-                best_inner_score = self._transform_score_format(
-                    inner_grid_score)
-        else:
-            best_inner_score = self._transform_score_format(
-                inner_grid_score)
-            current_inner_score_value = best_inner_score+1  # first time random thing
-
-        # Update best_inner_grid once rather than calling it under each if statement
-        if(current_inner_score_value is not None and current_inner_score_value != best_inner_score):
-            best_inner_params = param_dict
-        '''
+        for score_parameter in results:
+            if(self.metric_score_indicator_lower):
+                if(best_score == None or score_parameter[0] < best_score):
+                    best_score = score_parameter[0]
+                    best_parameters = score_parameter[1]
+            else:
+                if(best_score == None or score_parameter[0] > best_score):
+                    best_score = score_parameter[0]
+                    best_parameters = score_parameter[1]
         
-        #return None, None
-        
-        
+        return best_score, best_parameters
 
     def fit(self, X, y):
         '''A method to fit nested cross-validation 
@@ -204,7 +193,12 @@ class NestedCV():
             X = X.to_numpy()
         if isinstance(y, pd.DataFrame) or isinstance(y, pd.Series):
             y = y.to_numpy()
-
+        if(self.randomized_search):
+            param_func = ParameterSampler(param_distributions=self.params_grid,
+                                                   n_iter=self.randomized_search_iter)
+        else:
+            param_func = ParameterGrid(param_grid=self.params_grid)
+        
         outer_cv = KFold(n_splits=self.outer_kfolds, shuffle=True)
         inner_cv = KFold(n_splits=self.inner_kfolds, shuffle=True)
 
@@ -230,15 +224,15 @@ class NestedCV():
                 X_train_inner, X_test_inner = X_train_outer[train_index_inner], X_train_outer[test_index_inner]
                 y_train_inner, y_test_inner = y_train_outer[train_index_inner], y_train_outer[test_index_inner]
                 
+                if self.recursive_feature_elimination:
+                        X_train_inner, X_test_inner = self._fit_recursive_feature_elimination(
+                                    X_train_inner, y_train_inner, X_test_inner)
+                
                 def _parallel_fitting(X_train_inner, X_test_inner, y_train_inner, y_test_inner, param_dict):
                     log.debug(
                         '\n\tFitting these parameters:\n\t{0}'.format(param_dict))
                     # Set hyperparameters, train model on inner split, predict results.
                     self.model.set_params(**param_dict)
-
-                    if self.recursive_feature_elimination:
-                        X_train_inner, X_test_inner = self._fit_recursive_feature_elimination(
-                            best_inner_params, X_train_inner, y_train_inner, X_test_inner)
 
                     # Fit model with current hyperparameters and score it
                     self.model.fit(X_train_inner, y_train_inner)
@@ -246,25 +240,22 @@ class NestedCV():
                     # Predict and score model
                     inner_grid_score, inner_pred = self._predict_and_score(X_test_inner, y_test_inner)
                     
+                    # Cleanup for Keras
+                    if(type(self.model).__name__ == 'KerasRegressor' or
+                       type(self.model).__name__ == 'KerasClassifier'):
+                        from keras import backend as K
+                        K.clear_session()
+                    
                     return self._transform_score_format(inner_grid_score), param_dict
             
                 results = Parallel(n_jobs=self.n_jobs)(delayed(_parallel_fitting)(
                                                     X_train_inner, X_test_inner,
                                                     y_train_inner, y_test_inner,
                                                     param_dict=parameters)
-                                            for parameters in ParameterSampler(param_distributions=self.params_grid,
-                                                       n_iter=self.randomized_search_iter))
+                                            for parameters in param_func)
                 search_scores.extend(results)
-                #print(results[0])
-                #print(results[1])
-                #print("result: ",results[0], "+",results[1])
-                #best_inner_params, best_inner_score = self._best_of_results(results[0], results[1])
-            #print(search_scores)
-            #print('mininimum p: ',min(search_scores)[1])
-            #print('mininimum s: ',min(search_scores)[0])
             
-            best_inner_params = min(search_scores)[1]
-            best_inner_score = min(search_scores)[0]        
+            best_inner_score, best_inner_params = self._best_of_results(search_scores)
             
             best_inner_params_list.append(best_inner_params)
             best_inner_score_list.append(best_inner_score)

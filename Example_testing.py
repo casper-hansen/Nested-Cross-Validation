@@ -17,6 +17,7 @@ from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 # Suppress it
 import warnings
 warnings.simplefilter(action='ignore', category=UserWarning)
+warnings.simplefilter(action='ignore', category=FutureWarning)
 
 boston = load_boston()
 X = boston.data
@@ -30,8 +31,9 @@ param_grid = {
 
 NCV = NestedCV(model=RandomForestRegressor(), params_grid=param_grid,
                outer_kfolds=5, inner_kfolds=5, n_jobs = -1,
-               cv_options={'sqrt_of_score':True, 'randomized_search_iter':30,
-                           'recursive_feature_elimination':True, 'rfe_n_features':2})
+               cv_options={'sqrt_of_score':True, 
+                           'recursive_feature_elimination':True, 
+                           'rfe_n_features':2})
 NCV.fit(X=X,y=y)
 
 print(NCV.outer_scores)
