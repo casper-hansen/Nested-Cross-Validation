@@ -6,6 +6,7 @@ from sklearn.model_selection import KFold, ParameterGrid, ParameterSampler
 from sklearn.metrics import mean_squared_error
 from sklearn.feature_selection import RFECV
 from sklearn.utils.multiclass import type_of_target
+from joblib import Parallel, delayed
 
 class NestedCV():
     '''A general class to handle nested cross-validation for any estimator that
@@ -198,11 +199,8 @@ class NestedCV():
                     '\n\t{0}/{1} <-- Current inner fold'.format(j+1, self.inner_kfolds))
                 X_train_inner, X_test_inner = X_train_outer[train_index_inner], X_train_outer[test_index_inner]
                 y_train_inner, y_test_inner = y_train_outer[train_index_inner], y_train_outer[test_index_inner]
-
-                # Run either RandomizedSearch or GridSearch for input parameters
-                for param_dict in ParameterSampler(param_distributions=self.params_grid,
-                                                   n_iter=self.randomized_search_iter) if (self.randomized_search) else (
-                                                           ParameterGrid(param_grid=self.params_grid)):
+                
+                def _parallel_fitting(X_train_inner, X_test_inner, y_train_inner, y_test_inner, best_inner_params, best_inner_score, param_dict):
                     log.debug(
                         '\n\tFitting these parameters:\n\t{0}'.format(param_dict))
                     # Set hyperparameters, train model on inner split, predict results.
@@ -237,7 +235,16 @@ class NestedCV():
                     # Update best_inner_grid once rather than calling it under each if statement
                     if(current_inner_score_value is not None and current_inner_score_value != best_inner_score):
                         best_inner_params = param_dict
-
+                        
+                    return best_inner_params, best_inner_score
+            
+                result=Parallel(n_jobs=1)(delayed(_parallel_fitting)(
+                                                    X_train_inner, X_test_inner,
+                                                    y_train_inner, y_test_inner,
+                                                    best_inner_params, best_inner_score, param_dict=parameters)
+                                            for parameters in ParameterSampler(param_distributions=self.params_grid,
+                                                       n_iter=self.randomized_search_iter))
+            
             best_inner_params_list.append(best_inner_params)
             best_inner_score_list.append(best_inner_score)
 
