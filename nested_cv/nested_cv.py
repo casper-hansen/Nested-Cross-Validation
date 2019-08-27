@@ -131,6 +131,34 @@ class NestedCV():
             return self.metric(y_test, pred), pred
         else:
             return self.metric(y_test, pred, average=self.multiclass_average), pred
+    def _best_of_results(results):
+        print(results)
+        #print(inner_params)
+        '''
+        current_inner_score_value = best_inner_score
+        
+        # Find best score and corresponding best grid
+        if(best_inner_score is not None):
+            if(self.metric_score_indicator_lower and best_inner_score > inner_grid_score):
+                best_inner_score = self._transform_score_format(
+                    inner_grid_score)
+
+            elif (not self.metric_score_indicator_lower and best_inner_score < inner_grid_score):
+                best_inner_score = self._transform_score_format(
+                    inner_grid_score)
+        else:
+            best_inner_score = self._transform_score_format(
+                inner_grid_score)
+            current_inner_score_value = best_inner_score+1  # first time random thing
+
+        # Update best_inner_grid once rather than calling it under each if statement
+        if(current_inner_score_value is not None and current_inner_score_value != best_inner_score):
+            best_inner_params = param_dict
+        '''
+        
+        #return None, None
+        
+        
 
     def fit(self, X, y):
         '''A method to fit nested cross-validation 
@@ -192,6 +220,7 @@ class NestedCV():
             y_train_outer, y_test_outer = y[train_index], y[test_index]
             best_inner_params = {}
             best_inner_score = None
+            search_scores = []
 
             # Split X_train_outer and y_train_outer into K-partitions to be inner CV
             for (j, (train_index_inner, test_index_inner)) in enumerate(inner_cv.split(X_train_outer, y_train_outer)):
@@ -200,15 +229,15 @@ class NestedCV():
                 X_train_inner, X_test_inner = X_train_outer[train_index_inner], X_train_outer[test_index_inner]
                 y_train_inner, y_test_inner = y_train_outer[train_index_inner], y_train_outer[test_index_inner]
                 
-                def _parallel_fitting(X_train_inner, X_test_inner, y_train_inner, y_test_inner, best_inner_params, best_inner_score, param_dict):
+                def _parallel_fitting(X_train_inner, X_test_inner, y_train_inner, y_test_inner, param_dict):
                     log.debug(
                         '\n\tFitting these parameters:\n\t{0}'.format(param_dict))
                     # Set hyperparameters, train model on inner split, predict results.
                     self.model.set_params(**param_dict)
 
-                    if self.recursive_feature_elimination:
-                        X_train_inner, X_test_inner = self._fit_recursive_feature_elimination(
-                            best_inner_params, X_train_inner, y_train_inner, X_test_inner)
+                    #if self.recursive_feature_elimination:
+                    #    X_train_inner, X_test_inner = self._fit_recursive_feature_elimination(
+                    #        best_inner_params, X_train_inner, y_train_inner, X_test_inner)
 
                     # Fit model with current hyperparameters and score it
                     self.model.fit(X_train_inner, y_train_inner)
@@ -216,35 +245,21 @@ class NestedCV():
                     # Predict and score model
                     inner_grid_score, inner_pred = self._predict_and_score(X_test_inner, y_test_inner)
                     
-                    current_inner_score_value = best_inner_score
-
-                    # Find best score and corresponding best grid
-                    if(best_inner_score is not None):
-                        if(self.metric_score_indicator_lower and best_inner_score > inner_grid_score):
-                            best_inner_score = self._transform_score_format(
-                                inner_grid_score)
-
-                        elif (not self.metric_score_indicator_lower and best_inner_score < inner_grid_score):
-                            best_inner_score = self._transform_score_format(
-                                inner_grid_score)
-                    else:
-                        best_inner_score = self._transform_score_format(
-                            inner_grid_score)
-                        current_inner_score_value = best_inner_score+1  # first time random thing
-
-                    # Update best_inner_grid once rather than calling it under each if statement
-                    if(current_inner_score_value is not None and current_inner_score_value != best_inner_score):
-                        best_inner_params = param_dict
-                        
-                    return best_inner_params, best_inner_score
+                    return self._transform_score_format(inner_grid_score), param_dict
             
-                result=Parallel(n_jobs=1)(delayed(_parallel_fitting)(
+                results = Parallel(n_jobs=1)(delayed(_parallel_fitting)(
                                                     X_train_inner, X_test_inner,
                                                     y_train_inner, y_test_inner,
-                                                    best_inner_params, best_inner_score, param_dict=parameters)
+                                                    param_dict=parameters)
                                             for parameters in ParameterSampler(param_distributions=self.params_grid,
                                                        n_iter=self.randomized_search_iter))
-            
+                search_scores.extend(results)
+                #print(results[0])
+                #print(results[1])
+                #print("result: ",results[0], "+",results[1])
+                #best_inner_params, best_inner_score = self._best_of_results(results[0], results[1])
+            print(search_scores)
+            print('mininimum: ',min(search_scores))
             best_inner_params_list.append(best_inner_params)
             best_inner_score_list.append(best_inner_score)
 

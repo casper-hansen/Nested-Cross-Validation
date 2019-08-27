@@ -25,7 +25,7 @@ y = boston.target
 # Define a parameters grid
 param_grid = {
      'max_depth': [3, None],
-     'n_estimators': [10]
+     'n_estimators': [100]
 }
 
 NCV = NestedCV(model=RandomForestRegressor(), params_grid=param_grid, outer_kfolds=5, inner_kfolds=5,
