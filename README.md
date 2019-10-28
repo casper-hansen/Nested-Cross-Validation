@@ -18,6 +18,9 @@ This package is optimized for any estimator that implements a scikit-learn wrapp
 ### Simple
 Here is a single example using Random Forest. Check out the example notebook for more.
 ```python
+from nested_cv import NestedCV
+from sklearn.ensemble import RandomForestRegressor
+
 # Define a parameters grid
 param_grid = {
      'max_depth': [3, None],
