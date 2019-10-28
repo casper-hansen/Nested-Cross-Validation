@@ -21,11 +21,13 @@ class NestedCV():
     params_grid : dict
         The dict contains hyperparameters for model.
 
-    outer_kfolds : int or cv splitter class (e.g. KFold, StratifiedKFold etc.)
-        Outer splitting strategy. If int, KFold is default.
+    outer_cv : int or cv splitter class (e.g. KFold, StratifiedKFold etc.)
+        Outer splitting strategy. If int, KFold is default. For more information,
+        visit https://scikit-learn.org/stable/modules/classes.html#splitter-classes.
 
-    inner_kfolds : int or cv splitter class (e.g. KFold, StratifiedKFold etc.)
-        Inner splitting strategy. If int, KFold is default.
+    inner_cv : int or cv splitter class (e.g. KFold, StratifiedKFold etc.)
+        Inner splitting strategy. If int, KFold is default. For more information,
+        visit https://scikit-learn.org/stable/modules/classes.html#splitter-classes.
         
     n_jobs : int
         Number of jobs to run in parallel
@@ -64,11 +66,12 @@ class NestedCV():
             average other than 'binary'
     '''
 
-    def __init__(self, model, params_grid, outer_kfolds, inner_kfolds, n_jobs = 1, cv_options={}):
+    def __init__(self, model, params_grid, outer_cv = None, inner_cv = None, n_jobs = 1, cv_options={},
+                 outer_kfolds = None, inner_kfolds = None):
         self.model = model
         self.params_grid = params_grid
-        self.outer_kfolds = outer_kfolds
-        self.inner_kfolds = inner_kfolds
+        self.outer_cv = outer_cv
+        self.inner_cv = inner_cv
         self.n_jobs = n_jobs
         self.metric = cv_options.get('metric', mean_squared_error)
         self.metric_score_indicator_lower = cv_options.get(
@@ -89,6 +92,10 @@ class NestedCV():
         self.best_params = {}
         self.best_inner_score_list = []
         self.variance = []
+        
+        if(outer_kfolds != None or inner_kfolds != None):
+            raise NameError('outer_kfolds and inner_kfolds is renamed to outer_cv and inner_cv, ' \
+                            'please replace the variables in your code. Will be removed in future release')
 
     # to check if use sqrt_of_score and handle the different cases
     def _transform_score_format(self, scoreValue):
@@ -111,7 +118,7 @@ class NestedCV():
     # a function to handle recursive feature elimination
     def _fit_recursive_feature_elimination(self, X_train_outer, y_train_outer, X_test_outer):
         rfe = RFECV(estimator=self.model,
-                    min_features_to_select=self.rfe_n_features, cv=self.inner_kfolds, n_jobs = self.n_jobs)
+                    min_features_to_select=self.rfe_n_features, cv=self.inner_cv, n_jobs = self.n_jobs)
         rfe.fit(X_train_outer, y_train_outer)
         
         log.info('Best number of features was: {0}'.format(rfe.n_features_))
@@ -201,13 +208,13 @@ class NestedCV():
         else:
             param_func = ParameterGrid(param_grid=self.params_grid)
         
-        if(isinstance(self.outer_kfolds, numbers.Number) and
-           isinstance(self.inner_kfolds, numbers.Number)):
-            outer_cv = KFold(n_splits=self.outer_kfolds, shuffle=True)
-            inner_cv = KFold(n_splits=self.inner_kfolds, shuffle=True)
+        if(isinstance(self.outer_cv, numbers.Number) and
+           isinstance(self.inner_cv, numbers.Number)):
+            outer_cv = KFold(n_splits=self.outer_cv, shuffle=True)
+            inner_cv = KFold(n_splits=self.inner_cv, shuffle=True)
         else:
-            outer_cv = self.outer_kfolds
-            inner_cv = self.inner_kfolds
+            outer_cv = self.outer_cv
+            inner_cv = self.inner_cv
 
         outer_scores = []
         variance = []
@@ -217,7 +224,7 @@ class NestedCV():
         # Split X and y into K-partitions to Outer CV
         for (i, (train_index, test_index)) in enumerate(outer_cv.split(X, y)):
             log.debug(
-                '\n{0}/{1} <-- Current outer fold'.format(i+1, self.outer_kfolds))
+                '\n{0}/{1} <-- Current outer fold'.format(i+1, self.outer_cv))
             X_train_outer, X_test_outer = X[train_index], X[test_index]
             y_train_outer, y_test_outer = y[train_index], y[test_index]
             best_inner_params = {}
@@ -227,7 +234,7 @@ class NestedCV():
             # Split X_train_outer and y_train_outer into K-partitions to be inner CV
             for (j, (train_index_inner, test_index_inner)) in enumerate(inner_cv.split(X_train_outer, y_train_outer)):
                 log.debug(
-                    '\n\t{0}/{1} <-- Current inner fold'.format(j+1, self.inner_kfolds))
+                    '\n\t{0}/{1} <-- Current inner fold'.format(j+1, self.inner_cv))
                 X_train_inner, X_test_inner = X_train_outer[train_index_inner], X_train_outer[test_index_inner]
                 y_train_inner, y_test_inner = y_train_outer[train_index_inner], y_train_outer[test_index_inner]
                 

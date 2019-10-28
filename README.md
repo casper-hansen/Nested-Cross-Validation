@@ -28,7 +28,7 @@ param_grid = {
 }
 
 NCV = NestedCV(model=RandomForestRegressor(), params_grid=param_grid,
-               outer_kfolds=5, inner_kfolds=5, n_jobs = -1,
+               outer_cv=5, inner_cv=5, n_jobs = -1,
                cv_options={'sqrt_of_score':True, 
                            'recursive_feature_elimination':True, 
                            'rfe_n_features':2})
@@ -41,8 +41,8 @@ NCV.outer_scores
 | :------------- |:-------------| :-----|
 | model      | estimator | The estimator implements scikit-learn estimator interface. |
 | params_grid      | dictionary "dict"      |   The dict contains hyperparameters for model. |
-| outer_kfolds | int or cv splitter class      |    Outer splitting strategy. If int, KFold is default. |
-| inner_kfolds | int or cv splitter class     | Inner splitting strategy. If int, KFold is default.    | 
+| outer_cv | int or cv splitter class      |    Outer splitting strategy. If int, KFold is default. |
+| inner_cv | int or cv splitter class     | Inner splitting strategy. If int, KFold is default.    | 
 | cv_options | dictionary "dict"      |    [Next section](#cv_options-value-options) |
 | n_jobs | int      | Number of jobs for joblib to run (multiprocessing)    | 
 
