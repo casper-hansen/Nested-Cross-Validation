@@ -38,8 +38,8 @@ NCV.outer_scores
 | :------------- |:-------------| :-----|
 | model      | estimator | The estimator implements scikit-learn estimator interface. |
 | params_grid      | dictionary "dict"      |   The dict contains hyperparameters for model. |
-| outer_kfolds | int      |    Number of outer K-partitions in KFold |
-| inner_kfolds | int      | Number of inner K-partitions in KFold    | 
+| outer_kfolds | int or cv splitter class      |    Outer splitting strategy. If int, KFold is default. |
+| inner_kfolds | int or cv splitter class     | Inner splitting strategy. If int, KFold is default.    | 
 | cv_options | dictionary "dict"      |    [Next section](#cv_options-value-options) |
 | n_jobs | int      | Number of jobs for joblib to run (multiprocessing)    | 
 
@@ -92,7 +92,7 @@ NCV.outer_scores
 We suggest looking at the best hyperparameters together with the score for each outer loop. Look at how stable the model appears to be in a nested cross-validation setting. If the outer score changes a lot, then it might indicate instability in your model. In that case, start over with making a new model.
 
 ### After Nested Cross-Validation?
-If the results from nested cross-validation are stable: Run a normal cross-validation with the same procedure as in nested cross-validation, i.e. if you used feature selection in nested cross-validation, you should also do that in normal cross-validation.
+If the results from nested cross-validation are stable: Run a normal cross-validation with the same procedure as in nested cross-validation, i.e. if you used feature selection in nested cross-validation, you should also do that in normal cross-validation. Use the best parameters as input to your normal cross-validation.
 
 ## Limitations
 - [XGBoost](https://xgboost.readthedocs.io/en/latest/) implements a `early_stopping_rounds`, which cannot be used in this implementation. Other similar parameters might not work in combination with this implementation. The function will have to be adopted to use special parameters like that.

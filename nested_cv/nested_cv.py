@@ -21,11 +21,11 @@ class NestedCV():
     params_grid : dict
         The dict contains hyperparameters for model.
 
-    outer_kfolds : int
-        Number of outer K-partitions in KFold
+    outer_kfolds : int or cv splitter class (e.g. KFold, StratifiedKFold etc.)
+        Outer splitting strategy. If int, KFold is default.
 
-    inner_kfolds : int
-        Number of inner K-partitions in KFold
+    inner_kfolds : int or cv splitter class (e.g. KFold, StratifiedKFold etc.)
+        Inner splitting strategy. If int, KFold is default.
         
     n_jobs : int
         Number of jobs to run in parallel
