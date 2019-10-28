@@ -1,6 +1,7 @@
 import logging as log
 import pandas as pd
 import numpy as np
+import numbers
 from matplotlib import pyplot as plt
 from sklearn.model_selection import KFold, ParameterGrid, ParameterSampler
 from sklearn.metrics import mean_squared_error
@@ -25,6 +26,7 @@ class NestedCV():
 
     inner_kfolds : int
         Number of inner K-partitions in KFold
+        
     n_jobs : int
         Number of jobs to run in parallel
 
@@ -199,8 +201,13 @@ class NestedCV():
         else:
             param_func = ParameterGrid(param_grid=self.params_grid)
         
-        outer_cv = KFold(n_splits=self.outer_kfolds, shuffle=True)
-        inner_cv = KFold(n_splits=self.inner_kfolds, shuffle=True)
+        if(isinstance(self.outer_kfolds, numbers.Number) and
+           isinstance(self.inner_kfolds, numbers.Number)):
+            outer_cv = KFold(n_splits=self.outer_kfolds, shuffle=True)
+            inner_cv = KFold(n_splits=self.inner_kfolds, shuffle=True)
+        else:
+            outer_cv = self.outer_kfolds
+            inner_cv = self.inner_kfolds
 
         outer_scores = []
         variance = []
